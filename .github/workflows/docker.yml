@@ -43,6 +43,7 @@ jobs:
       # Подготовка тестового окружения
       - name: Prepare test environment
         run: |
+          echo "DOCKER_HUB_USERNAME=${{ secrets.DOCKER_HUB_USERNAME }}" > .env
           echo "APP_VERSION=${{ env.APP_VERSION }}" > .env
           cat .env
 
@@ -53,7 +54,7 @@ jobs:
           sudo chmod +x /usr/local/bin/docker-compose
           docker-compose --version
           
-          docker-compose -f docker-compose.ci.yml up -d
+          docker-compose --env-file .env -f docker-compose.ci.yml up -d
           
           sleep 15
           
