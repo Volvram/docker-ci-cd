@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   node-optimized:
-    image: docker-ci-cd/node-optimized:${APP_VERSION:-latest}
+    image: ${DOCKER_HUB_USERNAME}/node-optimized:${APP_VERSION:-latest}
     ports:
       - "3001:3000"
     environment:
@@ -12,7 +12,7 @@ services:
         condition: service_healthy
 
   node-regular:
-    image: docker-ci-cd/node-regular:${APP_VERSION:-latest}
+    image: ${DOCKER_HUB_USERNAME}/node-regular:${APP_VERSION:-latest}
     ports:
       - "3000:3000"
     depends_on:

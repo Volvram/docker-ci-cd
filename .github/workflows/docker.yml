@@ -26,8 +26,8 @@ jobs:
           file: ./server/Dockerfile
           push: true
           tags: |
-            docker-ci-cd/node-optimized:latest
-            docker-ci-cd/node-optimized:${{ env.APP_VERSION }}
+            ${{ secrets.DOCKER_HUB_USERNAME }}/node-optimized:latest
+            ${{ secrets.DOCKER_HUB_USERNAME }}/node-optimized:${{ env.APP_VERSION }}
 
       # Сборка node-regular (development)
       - name: Build node-regular
@@ -37,8 +37,14 @@ jobs:
           file: ./server/Dockerfile_non_optimized
           push: true
           tags: |
-            docker-ci-cd/node-regular:latest
-            docker-ci-cd/node-regular:${{ env.APP_VERSION }}
+            ${{ secrets.DOCKER_HUB_USERNAME }}/node-regular:latest
+            ${{ secrets.DOCKER_HUB_USERNAME }}/node-regular:${{ env.APP_VERSION }}
+
+      # Подготовка тестового окружения
+      - name: Prepare test environment
+        run: |
+          echo "APP_VERSION=${{ env.APP_VERSION }}" > .env
+          cat .env
 
       # Запуск всего стека и тестирование
       - name: Test stack
@@ -58,4 +64,6 @@ jobs:
             node -e "require('mongoose').connect('mongodb://mongo:27017/mydb').then(() => process.exit(0)).catch(e => { console.error(e); process.exit(1) })"
 
       - name: Debug logs
-        run: docker logs test-container
+        if: always()
+        run: |
+          docker-compose -f docker-compose.ci.yml logs
