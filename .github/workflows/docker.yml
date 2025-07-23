@@ -24,7 +24,8 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/docker-ci-cd:latest
 
       - name: Test
         run: docker run -d --name test-container ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest docker exec test-container curl -s http://localhost:3000 | grep "Hello from" || echo "Test failed" docker stop test-container
