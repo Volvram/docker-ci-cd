@@ -79,4 +79,4 @@ jobs:
       - name: Verify services
         run: |
           docker ps -a
-          curl --retry 5 --retry-delay 3 --retry-all-errors http://localhost:3001
+          curl --retry 5 --retry-delay 3 --retry-all-errors http://localhost:80
