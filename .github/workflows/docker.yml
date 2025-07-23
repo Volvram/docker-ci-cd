@@ -1,10 +1,9 @@
-name: Build and Push Docker Image
+name: Build and Push Docker Stack
 
 on: [push]
 
 env:
-  REGISTRY: docker.io
-  IMAGE_NAME: volvram/docker-ci-cd
+  APP_VERSION: ${{ github.sha }}  # Версия = хеш коммита
 
 jobs:
   build:
@@ -19,17 +18,44 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
-      - name: Build and Push
+      # Сборка node-optimized (production)
+      - name: Build node-optimized
         uses: docker/build-push-action@v5
         with:
           context: ./server
           file: ./server/Dockerfile
           push: true
           tags: |
-              ${{ secrets.DOCKER_HUB_USERNAME }}/docker-ci-cd:latest
+            docker-ci-cd/node-optimized:latest
+            docker-ci-cd/node-optimized:${{ env.APP_VERSION }}
 
-      - name: Test
+      # Сборка node-regular (development)
+      - name: Build node-regular
+        uses: docker/build-push-action@v5
+        with:
+          context: ./server
+          file: ./server/Dockerfile_non_optimized
+          push: true
+          tags: |
+            docker-ci-cd/node-regular:latest
+            docker-ci-cd/node-regular:${{ env.APP_VERSION }}
+
+      # Запуск всего стека и тестирование
+      - name: Test stack
         run: |
-          docker run -d --name test-container ${{ secrets.DOCKER_HUB_USERNAME }}/docker-ci-cd:latest
-          docker exec test-container curl -s http://localhost:3000 | grep "Hello from" || echo "Test failed"
-          docker stop test-container
+          docker-compose up -d -f docker-compose.ci.yml
+          
+          sleep 15
+          
+          echo  "Testing production (via nginx)..."
+          curl -s http://localhost:80 | grep "Hello from" || exit 1
+          
+          echo "Testing development..."
+          curl -s http://localhost:3000 | grep "Hello from" || exit 1
+          
+          echo "Testing MongoDB connection..."
+          docker exec $$(docker-compose -f docker-compose.ci.yml ps -q node-optimized) \
+            node -e "require('mongoose').connect('mongodb://mongo:27017/mydb').then(() => process.exit(0)).catch(e => { console.error(e); process.exit(1) })"
+
+      - name: Debug logs
+        run: docker logs test-container

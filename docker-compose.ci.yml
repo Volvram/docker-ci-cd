@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  node-optimized:
+    image: docker-ci-cd/node-optimized:${APP_VERSION:-latest}
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  node-regular:
+    image: docker-ci-cd/node-regular:${APP_VERSION:-latest}
+    ports:
+      - "3000:3000"
+    depends_on:
+      mongo:
+        condition: service_healthy
+  mongo:
+    image: mongo:6
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - node-optimized
+volumes:
+  mongo_data:
