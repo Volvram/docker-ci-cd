@@ -47,7 +47,7 @@ jobs:
             ${{ secrets.DOCKER_HUB_USERNAME }}/node-regular:latest
             ${{ secrets.DOCKER_HUB_USERNAME }}/node-regular:${{ env.APP_VERSION }}
 
-      - name: Start containers with Docker Compose
+      - name: Start containers
         run: |
           docker run -d --name mongo -p 27017:27017 \
             -v mongo_data:/data/db \
