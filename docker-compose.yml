@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  # Оптимизированная сборка (production)
+  node-optimized:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  # Обычная сборка (development)
+  node-regular:
+    build:
+      context: ./server
+      dockerfile: Dockerfile_non_optimized
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ./server:/app # Hot-reload для разработки
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  # MongoDB (общая для обеих сборок)
+  mongo:
+    image: mongo:6
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=mydb
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+
+  # Nginx (проксирует только оптимизированную версию)
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf  # Монтируем файл
+    depends_on:
+      - node-optimized # Проксирует только production-версию
+volumes:
+  mongo_data:
