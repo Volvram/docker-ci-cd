@@ -70,17 +70,31 @@ jobs:
             --link node-opt \
             nginx:alpine
           
-          sleep 10
+          sleep 20
           
-          echo  "Testing production (via nginx)..."
-          curl -s http://localhost:80 | grep "Hello from" || exit 1
+          echo "Testing production (via nginx)..."
+          if ! curl -s --retry 3 --retry-delay 5 http://localhost:80 | grep "Hello from"; then
+            echo "Production test failed! Debug info:"
+            docker logs nginx
+            docker logs node-opt
+            exit 1
+          fi
           
           echo "Testing development..."
-          curl -s http://localhost:3000 | grep "Hello from" || exit 1
+          if ! curl -s --retry 3 --retry-delay 5 http://localhost:3000 | grep "Hello from"; then
+            echo "Development test failed! Debug info:"
+            docker logs node-dev
+            exit 1
+          fi
           
           echo "Testing MongoDB connection..."
-          docker exec $$(docker-compose -f docker-compose.ci.yml ps -q node-optimized) \
-            node -e "require('mongoose').connect('mongodb://mongo:27017/mydb').then(() => process.exit(0)).catch(e => { console.error(e); process.exit(1) })"
+          if ! docker exec node-opt \
+            node -e "require('mongoose').connect('mongodb://mongo:27017/mydb', {serverSelectionTimeoutMS: 5000}).then(() => process.exit(0)).catch(e => { console.error('MongoDB connection error:', e); process.exit(1) })"; then
+            echo "MongoDB connection test failed! Debug info:"
+            docker logs mongo
+            docker exec node-opt node -e "console.log(process.env)"
+            exit 1
+          fi
 
       - name: Debug logs
         if: always()
