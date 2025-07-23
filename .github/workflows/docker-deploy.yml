@@ -24,7 +24,32 @@ jobs:
 
       - name: Start containers with Docker Compose
         run: |
-          docker-compose -f docker-compose.yml up -d --build
+          docker run -d --name mongo -p 27017:27017 \
+            -v mongo_data:/data/db \
+            mongo:6 \
+          
+          echo "Waiting for MongoDB to start..."
+          while ! docker exec mongo mongosh --eval "db.adminCommand('ping')" >/dev/null 2>&1; do
+            sleep 2
+          done
+          
+          docker run -d --name node-optimized \
+            -p 3001:3000 \
+            -e NODE_ENV=production \
+            --link mongo \
+            ${{ secrets.DOCKER_HUB_USERNAME }}/node-optimized:${{ env.APP_VERSION }}
+          
+          docker run -d --name node-regular \
+            -p 3000:3000 \
+            -e NODE_ENV=development \
+            --link mongo \
+            ${{ secrets.DOCKER_HUB_USERNAME }}/node-regular:${{ env.APP_VERSION }}
+          
+          docker run -d --name nginx \
+            -p 80:80 \
+            -v $(pwd)/nginx/nginx.conf:/etc/nginx/conf.d/default.conf \
+            --link node-optimized \
+            nginx:alpine
 
       - name: Verify services
         run: |
