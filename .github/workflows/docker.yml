@@ -26,7 +26,10 @@ jobs:
           file: ./server/Dockerfile
           push: true
           tags: |
-            ${{ secrets.DOCKER_HUB_USERNAME }}/docker-ci-cd:latest
+              ${{ secrets.DOCKER_HUB_USERNAME }}/docker-ci-cd:latest
 
       - name: Test
-        run: docker run -d --name test-container ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest docker exec test-container curl -s http://localhost:3000 | grep "Hello from" || echo "Test failed" docker stop test-container
+        run: |
+          docker run -d --name test-container ${{ secrets.DOCKER_HUB_USERNAME }}/docker-ci-cd:latest
+          docker exec test-container curl -s http://localhost:3000 | grep "Hello from" || echo "Test failed"
+          docker stop test-container
