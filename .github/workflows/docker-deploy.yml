@@ -4,6 +4,9 @@ on:
   push:
     branches: [ "main" ]
 
+env:
+  APP_VERSION: ${{ github.sha }}  # Версия = хеш коммита
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
