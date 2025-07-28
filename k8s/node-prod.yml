@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: node-optimized
+spec:
+  replicas: 2 # Реплики для отказоустойчивости
+  selector:
+    matchLabels:
+      app: node-optimized
+  template:
+    metadata:
+      labels:
+        app: node-optimized
+    spec:
+      containers:
+      - name: node
+        image: volvram/node-optimized
+        ports:
+        - containerPort: 3000
+        env:
+          - name: NODE_ENV
+            value: "production"
+          - name: MONGO_URI
+            value: "mongodb://mongo:27017/mydb" # mongo - имя сервиса из mongo.yml
+
+---
+
+# Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: node-optimized
+spec:
+  selector:
+    app: node-optimized
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000
